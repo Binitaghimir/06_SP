@@ -45,6 +45,7 @@ glimpse(spp_rcbd_df)
 # c) Wrangling
 ```{r rcbd_dfw}
 spp_rcbd_dfw <- spp_rcbd_df %>%
+  rename(block = rep) %>% 
   mutate(block = factor(block),
          nrate_kgha = factor(nrate_kgha),
          krate_kgha = factor(krate_kgha) 
@@ -54,7 +55,8 @@ spp_rcbd_dfw <- spp_rcbd_df %>%
 spp_rcbd_dfw
 ```
 
-
+ If you want to run ANOVA then you should make treatment as a factor
+ but if you want regression treatment shlould be in character. Intersting thing is model will be same for both ANOVA and regression 
 ```{r rcbd_dfw}
 summary(spp_rcbd_dfw)
 ```
@@ -109,7 +111,9 @@ We have 2 random variance component from the split-plot because we have 2 differ
 options(contrasts = c("contr.sum", "contr.poly"))
 
 # Model fitting
-spp_rcbd_mix_mod 
+spp_rcbd_mix_mod <- lmer(data = spp_rcbd_dfw,
+                         formula = yield_kgha ~ (1|block/krate_kgha
+                                                   ) + krate_kgha*nrate_kgha)
 
 # Summary
 summary(spp_rcbd_mix_mod)
@@ -155,7 +159,7 @@ One difference in mixed models is that the 3 first assumptions are also applied 
 
 ### Block random effects are iid ~ N(0,var_a)  
 ```{r randeff_block}
-randeff_block
+randeff_block <- ranef(spp_rcbd_mix_mod) $block
 
 randeff_block
 ```
@@ -178,7 +182,8 @@ Nothing to worry here, especially since we only have 4 points.
 
 ### Block:krate random effects are iid ~ N(0,var_b)  
 ```{r randeff_block}
-randeff_blockkrate 
+randeff_blockkrate <- ranef(spp_rcbd_mix_mod)$`krate_kgha:block`
+
 
 randeff_blockkrate
 ```
@@ -263,6 +268,7 @@ When we ask for the interaction means (like in chunk above), the emmean error is
 What happens with the emmean error if we ask for the emmean of the main effects of K and N rate separately? 
 
 ```{r k rate means}
+emmeans(spp_rcbd_mix_mod, ~krate_kgha)
 
 ```
 The SE of the whole-plot treatment factor (k rate) is **232**.
@@ -270,6 +276,7 @@ The SE of the whole-plot treatment factor (k rate) is **232**.
 What about for the split-plot treatment factor (n rate)?  
 
 ```{r n rate means }
+emmeans(spp_rcbd_mix_mod, ~nrate_kgha)
 
 ```
 It is 209.  
@@ -336,5 +343,6 @@ ggsave("../output/spp_rcbd_mix_means.png",
 ```
 
 What happened the letter separation compared to the RCBD mixed with blocks random?  
+In rcbd letters separation are upto “a” to “e”, whereas in split plot rcbd letters given are upto “a” to “d”. 
 
 
